@@ -29,11 +29,18 @@ import org.onosproject.net.host.HostListener;
 import org.onosproject.net.host.HostService;
 import org.onlab.packet.MacAddress;
 
+import javax.ws.rs.client.Client;
+import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.client.WebTarget;
+
 /**
  * Skeletal ONOS application component.
  */
 @Component(immediate = true)
 public class AppComponent {
+
+    // vCPE-Manager API Endpoint
+    private final String VCPE_API_URL = "http://172.17.0.5:8000";
 
     private final Logger log = LoggerFactory.getLogger(getClass());
     private final HostListener hostListener = new InternalHostListener();
@@ -41,10 +48,17 @@ public class AppComponent {
     @Reference(cardinality = ReferenceCardinality.MANDATORY)
     private HostService hostService;
 
+    Client client = ClientBuilder.newClient();
+    WebTarget wt = client.target(VCPE_API_URL);
+
     @Activate
     protected void activate() {
         log.info("Starting Yubin APP");
         hostService.addListener(hostListener);
+
+        String response = wt.path("/test").request().get(String.class);
+        log.info("API Test: "+ response);
+
         log.info("Started Yubin APP");
     }
 
