@@ -22,8 +22,8 @@ import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.component.annotations.ReferenceCardinality;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import org.onosproject.net.Host;
+import org.onosproject.net.HostLocation;
 import org.onosproject.net.host.HostEvent;
 import org.onosproject.net.host.HostListener;
 import org.onosproject.net.host.HostService;
@@ -31,7 +31,14 @@ import org.onlab.packet.MacAddress;
 
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.WebTarget;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 /**
  * Skeletal ONOS application component.
@@ -93,9 +100,22 @@ public class AppComponent {
                 // Synchronizing here is an overkill, but safer for demo purposes.
                 Host host = event.subject();
                 MacAddress mac = host.mac();
+                HostLocation location = host.location();
                 log.info("MAC = "+ mac.toString());
+                log.info("location = "+location.toString());
+
+                // 通知 vCPE Manager
+                if (event.type() == HostEvent.Type.HOST_ADDED) {
+                    ObjectMapper mapper = new ObjectMapper();
+                    JsonNode jsonNode = mapper.createObjectNode();
+                    ((ObjectNode) jsonNode).put("mac", mac.toString());
+                    ((ObjectNode) jsonNode).put("location", location.toString());
+    
+                    Response r = wt.path("/add_update_ue").request(MediaType.APPLICATION_JSON).post(Entity.json(jsonNode.toString()));
+                    log.info("add_update_ue");
+                    log.info("status code = " + Integer.toString(r.getStatus()));
+                }
             }
         }
     } // end of class InternalHostListener
-
 }
